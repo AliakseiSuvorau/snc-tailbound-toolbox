@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "snc-tailbound-toolbox"
+version = "0.1.0"
+description = "Discrete-time stochastic network calculus"
+readme = "README.md"
+requires-python = ">=3.15"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
