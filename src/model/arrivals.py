@@ -37,11 +37,17 @@ class TokenBucketArrival(Arrival):
 
     @property
     def curve_func(self) -> Callable[[int, float, float], float]:
-        return lambda t, sigma, theta=None: self.rate * t + self.burst + sigma
+        def _curve(t, sigma, *args):
+            if t <= 0:
+                return 0.
+
+            return self.rate * t + self.burst + sigma
+
+        return _curve
 
     @property
-    def err_func(self) -> Callable[[float, float], float]:
-        return lambda sigma, theta = None: 0.
+    def err_func(self) -> Callable[[float], float]:
+        return lambda sigma: 0. if sigma >= 0 else 1.
 
 
 class DiscreteMMOOArrival(Arrival):
