@@ -4,6 +4,7 @@ from typing import Callable
 from warnings import warn
 
 from utils.errors import InvalidParameterError
+from utils.utils import adapt_callable
 
 
 class Arrival(ABC):
@@ -114,3 +115,34 @@ class DiscreteMMOOArrival(Arrival):
             raise InvalidParameterError(f"Markov chain is not ergodic: check transition probabilities.")
 
         return math.log(math.exp(theta * self.peak_rate) * factor / spectral_rad) / theta
+
+
+class AggregatedArrival(Arrival):
+    """
+    Aggregated arrival curve for a sum of `arrivals`.
+    """
+
+    arrivals: list[Arrival]
+
+    _adopted_curves: list[Callable[..., float]]
+    _adopted_errs: list[Callable[..., float]]
+
+    def __init__(self, arrivals: list[Arrival]):
+        if not arrivals:
+            raise InvalidParameterError("No arrivals provided")
+        if len(arrivals) == 1:
+            warn("Better use a single arrival class instead")
+        if len(arrivals) != len(set(arrivals)):
+            raise InvalidParameterError("Arrivals cannot repeat")
+        self.arrivals = arrivals
+
+        self._adopted_curves = [adapt_callable(arrival.curve_func) for arrival in arrivals]
+        self._adopted_errs = [adapt_callable(arrival.err_func) for arrival in arrivals]
+
+    @property
+    def curve_func(self) -> Callable[..., float]:
+        return lambda t, sigma, *args: sum(fn(t, sigma, *args) for fn in self._adopted_curves)
+
+    @property
+    def err_func(self) -> Callable[..., float]:
+        return lambda sigma, *args: min(1., sum(fn(sigma, *args) for fn in self._adopted_errs))
